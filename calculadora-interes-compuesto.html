@@ -387,10 +387,10 @@
         <div class="field">
           <label for="currency">Moneda</label>
           <select id="currency">
-            <option value="USD" selected>USD — Dólar</option>
+            <option value="COP" selected>COP — Peso colombiano</option>
+            <option value="USD">USD — Dólar</option>
             <option value="EUR">EUR — Euro</option>
             <option value="MXN">MXN — Peso mexicano</option>
-            <option value="COP">COP — Peso colombiano</option>
             <option value="ARS">ARS — Peso argentino</option>
             <option value="CLP">CLP — Peso chileno</option>
             <option value="PEN">PEN — Sol peruano</option>
@@ -514,7 +514,7 @@
     rate: '8',
     freq: '12',
     years: '10',
-    currency: 'USD',
+    currency: 'COP',
     timing: 'end'
   };
 
@@ -529,7 +529,7 @@
 
   function currencySymbol() {
     try {
-      const parts = new Intl.NumberFormat('es', {
+      const parts = new Intl.NumberFormat('es-CO', {
         style: 'currency',
         currency: ui.currency.value,
         currencyDisplay: 'narrowSymbol'
@@ -544,7 +544,7 @@
   function fmt(value, maxDecimals) {
     const decimals = typeof maxDecimals === 'number' ? maxDecimals : 2;
     try {
-      return new Intl.NumberFormat('es', {
+      return new Intl.NumberFormat('es-CO', {
         style: 'currency',
         currency: ui.currency.value,
         currencyDisplay: 'narrowSymbol',
@@ -558,7 +558,7 @@
 
   function fmtCompact(value) {
     try {
-      const number = new Intl.NumberFormat('es', {
+      const number = new Intl.NumberFormat('es-CO', {
         notation: 'compact',
         maximumFractionDigits: 1
       }).format(value);
