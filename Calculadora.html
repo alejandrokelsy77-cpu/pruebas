@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de interés compuesto</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(900px 500px at 12% -10%, rgba(52, 211, 153, .16), transparent 60%),
+      radial-gradient(700px 420px at 100% 0%, rgba(34, 211, 238, .12), transparent 55%),
+      #070b14;
+    color: #e6edf6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app { max-width: 1180px; margin: 0 auto; padding: 40px 20px 64px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .app { padding-top: 28px; }
+  }
+
+  .card {
+    background: linear-gradient(180deg, rgba(18, 26, 43, .92), rgba(13, 20, 34, .92));
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 24px 50px -30px rgba(0, 0, 0, .9);
+    min-width: 0;
+  }
+
+  .card h2 {
+    margin: 0; font-size: 15px; font-weight: 650;
+    letter-spacing: .01em; color: #dbe6f3;
+  }
+
+  /* ---------- Formulario ---------- */
+
+  .form-card h2 { margin-bottom: 18px; }
+
+  .field { margin-bottom: 15px; }
+
+  .field > label {
+    display: block; font-size: 13px; font-weight: 500;
+    color: #a8b6c9; margin-bottom: 7px;
+  }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+
+  .input-wrap .affix {
+    position: absolute; color: #64748b; font-size: 14px;
+    pointer-events: none; user-select: none;
+  }
+
+  .input-wrap .prefix { left: 14px; }
+  .input-wrap .suffix { right: 14px; }
+
+  .input-wrap .prefix + input { padding-left: 40px; }
+  .input-wrap input.has-suffix { padding-right: 40px; }
+
+  input, select {
+    width: 100%;
+    background: #0a1220;
+    border: 1px solid rgba(148, 163, 184, .22);
+    color: #e6edf6;
+    border-radius: 11px;
+    padding: 11px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+
+  input:hover, select:hover { border-color: rgba(148, 163, 184, .38); }
+
+  input:focus, select:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, .15);
+    background: #0b1526;
+  }
+
+  select {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%2394a3b8' stroke-width='1.6' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .range-row { display: flex; align-items: center; gap: 12px; margin-top: 9px; }
+
+  input[type="range"] {
+    padding: 0; margin: 0; border: none; background: transparent;
+    accent-color: #34d399; cursor: pointer; height: 20px;
+    box-shadow: none !important;
+  }
+
+  input[type="range"]:focus { box-shadow: none; }
+
+  .range-hint { font-size: 12px; color: #64748b; white-space: nowrap; }
+
+  .error {
+    margin: 0 0 14px; padding: 10px 12px; border-radius: 10px;
+    background: rgba(248, 113, 113, .1); border: 1px solid rgba(248, 113, 113, .3);
+    color: #fca5a5; font-size: 13px;
+  }
+
+  .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 20px; }
+
+  .btn {
+    border: none; border-radius: 11px; padding: 12px 16px;
+    font-size: 14px; font-weight: 650; font-family: inherit;
+    cursor: pointer; transition: transform .12s, filter .15s, background .15s;
+  }
+
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #052e21;
+    box-shadow: 0 10px 24px -12px rgba(52, 211, 153, .8);
+  }
+
+  .btn-primary:hover { filter: brightness(1.07); }
+
+  .btn-ghost {
+    background: rgba(148, 163, 184, .08);
+    border: 1px solid rgba(148, 163, 184, .2);
+    color: #cbd5e1;
+  }
+
+  .btn-ghost:hover { background: rgba(148, 163, 184, .14); }
+
+  /* ---------- Resultados ---------- */
+
+  .results { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; min-width: 0; }
+
+  .result-card {
+    background:
+      linear-gradient(135deg, rgba(52, 211, 153, .15), rgba(34, 211, 238, .07) 55%, rgba(18, 26, 43, .95));
+    border-color: rgba(52, 211, 153, .25);
+  }
+
+  .result-hero > span {
+    font-size: 13px; color: #a7f3d0; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+
+  .result-hero strong {
+    display: block;
+    font-size: clamp(34px, 5vw, 50px);
+    font-weight: 750;
+    letter-spacing: -.03em;
+    margin: 8px 0 6px;
+    background: linear-gradient(90deg, #6ee7b7, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .result-hero small { color: #8fa3b8; font-size: 13px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .stat span { display: block; font-size: 12px; color: #8fa3b8; margin-bottom: 5px; }
+
+  .stat strong {
+    font-size: 18px; font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .stat.interest strong { color: #6ee7b7; }
+
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px;
+  }
+
+  .legend { display: flex; align-items: center; gap: 14px; font-size: 12px; color: #94a3b8; }
+
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot-balance { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, .7); }
+  .dot-contrib { background: #94a3b8; }
+
+  .chart-wrap { position: relative; width: 100%; height: 300px; }
+
+  #chart { width: 100%; height: 100%; display: block; }
+
+  .tooltip {
+    position: absolute;
+    transform: translate(-50%, -115%);
+    display: flex; flex-direction: column; gap: 2px;
+    background: rgba(7, 11, 20, .96);
+    border: 1px solid rgba(148, 163, 184, .28);
+    border-radius: 9px;
+    padding: 8px 11px;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #cbd5e1;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 3;
+    box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .9);
+  }
+
+  .tooltip strong { color: #e6edf6; font-size: 12px; margin-bottom: 2px; }
+  .tooltip span b { color: #6ee7b7; font-weight: 600; }
+
+  .tooltip[hidden] { display: none; }
+
+  .table-wrap { max-height: 340px; overflow: auto; border-radius: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: #111a2b;
+    text-align: right;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #8fa3b8;
+    white-space: nowrap;
+  }
+
+  thead th:first-child, tbody td:first-child { text-align: left; }
+
+  tbody td {
+    padding: 9px 12px;
+    text-align: right;
+    border-top: 1px solid rgba(148, 163, 184, .09);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  tbody tr:hover td { background: rgba(148, 163, 184, .05); }
+
+  tbody tr:last-child td { color: #6ee7b7; font-weight: 600; }
+
+  .muted { color: #64748b; }
+
+  .table-empty { padding: 20px 12px; text-align: center; color: #64748b; font-size: 13px; }
+
+  footer {
+    margin-top: 30px; padding-top: 20px;
+    border-top: 1px solid rgba(148, 163, 184, .12);
+    color: #64748b; font-size: 12px; line-height: 1.7;
+  }
+
+  footer code {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, .08);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 11.5px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, .22);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="layout">
+    <section class="card form-card" aria-labelledby="form-title">
+      <h2 id="form-title">Tus datos</h2>
+
+      <p id="error" class="error" role="alert" hidden></p>
+
+      <div class="field">
+        <label for="principal">Capital inicial</label>
+        <div class="input-wrap">
+          <span class="affix prefix money-prefix">$</span>
+          <input id="principal" type="text" inputmode="decimal" value="1000" autocomplete="off" aria-describedby="error">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="monthly">Aporte mensual</label>
+        <div class="input-wrap">
+          <span class="affix prefix money-prefix">$</span>
+          <input id="monthly" type="text" inputmode="decimal" value="100" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="rate">Tasa anual</label>
+          <div class="input-wrap">
+            <input id="rate" class="has-suffix" type="text" inputmode="decimal" value="8" autocomplete="off">
+            <span class="affix suffix">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="freq">Capitalización</label>
+          <select id="freq">
+            <option value="12" selected>Mensual</option>
+            <option value="4">Trimestral</option>
+            <option value="2">Semestral</option>
+            <option value="1">Anual</option>
+            <option value="365">Diaria</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="years">Plazo (años)</label>
+        <input id="years" type="number" min="0" max="100" step="0.5" value="10">
+        <div class="range-row">
+          <input id="yearsRange" type="range" min="0" max="50" step="0.5" value="10" aria-label="Plazo en años">
+          <span class="range-hint">0 – 50 años</span>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="currency">Moneda</label>
+          <select id="currency">
+            <option value="COP" selected>COP — Peso colombiano</option>
+            <option value="USD">USD — Dólar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="MXN">MXN — Peso mexicano</option>
+            <option value="ARS">ARS — Peso argentino</option>
+            <option value="CLP">CLP — Peso chileno</option>
+            <option value="PEN">PEN — Sol peruano</option>
+            <option value="BRL">BRL — Real</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="timing">Aportes</label>
+          <select id="timing">
+            <option value="end" selected>Al final del mes</option>
+            <option value="begin">Al inicio del mes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="download" class="btn btn-primary" type="button">Descargar CSV</button>
+        <button id="reset" class="btn btn-ghost" type="button">Restablecer</button>
+      </div>
+    </section>
+
+    <div class="results">
+      <section class="card result-card" aria-labelledby="result-title">
+        <h2 id="result-title" class="muted" style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;color:#a7f3d0">Saldo final</h2>
+        <div class="result-hero">
+          <strong id="final" aria-live="polite">$0</strong>
+          <small id="note"></small>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span>Total aportado</span>
+            <strong id="contributed">$0</strong>
+          </div>
+          <div class="stat interest">
+            <span>Interés ganado</span>
+            <strong id="interest">$0</strong>
+          </div>
+          <div class="stat">
+            <span>Crecimiento</span>
+            <strong id="growth">0 %</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="chart-title">
+        <div class="card-head">
+          <h2 id="chart-title">Evolución del saldo</h2>
+          <div class="legend">
+            <span><i class="dot dot-balance"></i>Saldo</span>
+            <span><i class="dot dot-contrib"></i>Aportes</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart" role="img" aria-label="Gráfico de la evolución del saldo y los aportes"></canvas>
+          <div id="tooltip" class="tooltip" hidden></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="table-title">
+        <div class="card-head">
+          <h2 id="table-title">Detalle anual</h2>
+          <span class="muted" style="font-size:12px">Aportes e intereses por año</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Año</th>
+                <th scope="col">Aportes del año</th>
+                <th scope="col">Interés del año</th>
+                <th scope="col">Saldo final</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <div>Fórmula: <code>M = C·(1+i)<sup>n</sup> + A·[((1+i)<sup>n</sup> − 1) / i]</code></div>
+    <div>La tasa efectiva mensual se obtiene de la tasa anual y la frecuencia de capitalización. Los resultados son estimaciones y no incluyen impuestos ni comisiones.</div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const ui = {
+    principal: $('principal'),
+    monthly: $('monthly'),
+    rate: $('rate'),
+    freq: $('freq'),
+    years: $('years'),
+    yearsRange: $('yearsRange'),
+    currency: $('currency'),
+    timing: $('timing'),
+    error: $('error'),
+    final: $('final'),
+    contributed: $('contributed'),
+    interest: $('interest'),
+    growth: $('growth'),
+    note: $('note'),
+    tableBody: $('tableBody'),
+    chart: $('chart'),
+    tooltip: $('tooltip'),
+    download: $('download'),
+    reset: $('reset')
+  };
+
+  const canvas = ui.chart;
+  const ctx = canvas.getContext('2d');
+
+  const DEFAULTS = {
+    principal: '1000',
+    monthly: '100',
+    rate: '8',
+    freq: '12',
+    years: '10',
+    currency: 'COP',
+    timing: 'end'
+  };
+
+  const state = {
+    points: [],
+    years: [],
+    meta: { months: 0, monthlyRate: 0, totalContributed: 0, totalInterest: 0, principal: 0 },
+    chartGeom: null
+  };
+
+  /* ---------- Formato ---------- */
+
+  function currencySymbol() {
+    try {
+      const parts = new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: ui.currency.value,
+        currencyDisplay: 'narrowSymbol'
+      }).formatToParts(0);
+      const part = parts.find((p) => p.type === 'currency');
+      return part ? part.value : '$';
+    } catch (e) {
+      return '$';
+    }
+  }
+
+  function fmt(value, maxDecimals) {
+    const decimals = typeof maxDecimals === 'number' ? maxDecimals : 2;
+    try {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: ui.currency.value,
+        currencyDisplay: 'narrowSymbol',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals
+      }).format(value);
+    } catch (e) {
+      return currencySymbol() + ' ' + value.toFixed(decimals);
+    }
+  }
+
+  function fmtCompact(value) {
+    try {
+      const number = new Intl.NumberFormat('es-CO', {
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(value);
+      return currencySymbol() + ' ' + number;
+    } catch (e) {
+      return currencySymbol() + ' ' + Math.round(value);
+    }
+  }
+
+  function pct(value) {
+    return value.toFixed(2).replace('.', ',') + ' %';
+  }
+
+  function readNumber(input) {
+    const raw = String(input.value || '').trim().replace(/[^\d.,-]/g, '');
+    if (!raw || raw === '-' || raw === '.' || raw === ',') return 0;
+
+    const isMoney = input === ui.principal || input === ui.monthly;
+    const lastComma = raw.lastIndexOf(',');
+    const lastDot = raw.lastIndexOf('.');
+    let normalized;
+
+    if (lastComma !== -1 && lastDot !== -1) {
+      // El separador que aparece al final es el decimal.
+      normalized = lastComma > lastDot
+        ? raw.replace(/\./g, '').replace(',', '.')
+        : raw.replace(/,/g, '');
+    } else if (lastComma !== -1) {
+      const parts = raw.split(',');
+      if (parts.length > 2) {
+        normalized = raw.replace(/,/g, '');
+      } else if (isMoney && parts[1].length === 3 && parts[0].length <= 3) {
+        normalized = raw.replace(',', '');
+      } else {
+        normalized = raw.replace(',', '.');
+      }
+    } else if (lastDot !== -1) {
+      const parts = raw.split('.');
+      if (parts.length > 2) {
+        normalized = raw.replace(/\./g, '');
+      } else if (isMoney && parts[1].length === 3 && parts[0].length <= 3) {
+        normalized = raw.replace('.', '');
+      } else {
+        normalized = raw;
+      }
+    } else {
+      normalized = raw;
+    }
+
+    const value = Number(normalized);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  /* ---------- Cálculo ---------- */
+
+  function simulate(config) {
+    const { principal, monthly, annualRate, m, months, timing } = config;
+    const monthlyRate = Math.pow(1 + annualRate / m, m / 12) - 1;
+
+    let balance = principal;
+    let contributed = principal;
+    let yearContribution = 0;
+    let yearInterest = 0;
+
+    const points = [{ month: 0, balance: balance, contributed: contributed }];
+    const years = [];
+
+    for (let month = 1; month <= months; month++) {
+      let interest;
+
+      if (timing === 'begin') {
+        balance += monthly;
+        contributed += monthly;
+        yearContribution += monthly;
+        interest = balance * monthlyRate;
+      } else {
+        interest = balance * monthlyRate;
+        balance += monthly;
+        contributed += monthly;
+        yearContribution += monthly;
+      }
+
+      balance += interest;
+      yearInterest += interest;
+
+      points.push({ month: month, balance: balance, contributed: contributed });
+
+      if (month % 12 === 0 || month === months) {
+        years.push({
+          year: Math.ceil(month / 12),
+          partial: month % 12 !== 0,
+          contribution: yearContribution,
+          interest: yearInterest,
+          balance: balance
+        });
+        yearContribution = 0;
+        yearInterest = 0;
+      }
+    }
+
+    return {
+      points: points,
+      years: years,
+      monthlyRate: monthlyRate,
+      totalContributed: contributed,
+      totalInterest: balance - contributed,
+      balance: balance
+    };
+  }
+
+  function readConfig() {
+    const principal = Math.max(0, readNumber(ui.principal));
+    const monthly = Math.max(0, readNumber(ui.monthly));
+    const annualRate = readNumber(ui.rate) / 100;
+    const m = Number(ui.freq.value) || 12;
+
+    let years = readNumber(ui.years);
+    if (!Number.isFinite(years) || years < 0) years = 0;
+    years = Math.min(years, 100);
+
+    let months = Math.round(years * 12);
+    months = Math.max(0, Math.min(months, 1200));
+
+    return {
+      principal: principal,
+      monthly: monthly,
+      annualRate: annualRate,
+      m: m,
+      months: months,
+      timing: ui.timing.value === 'begin' ? 'begin' : 'end'
+    };
+  }
+
+  function showError(message) {
+    ui.error.textContent = message;
+    ui.error.hidden = !message;
+  }
+
+  function clearOutputs() {
+    ui.final.textContent = '—';
+    ui.contributed.textContent = '—';
+    ui.interest.textContent = '—';
+    ui.growth.textContent = '—';
+    ui.note.textContent = '';
+    ui.tableBody.innerHTML =
+      '<tr><td colspan="4" class="table-empty">Corrige los datos para ver el detalle.</td></tr>';
+    state.points = [];
+    state.years = [];
+    state.meta = {
+      months: 0,
+      monthlyRate: 0,
+      totalContributed: 0,
+      totalInterest: 0,
+      principal: 0
+    };
+    ui.tooltip.hidden = true;
+    drawChart(null);
+  }
+
+  /* ---------- Render ---------- */
+
+  function render() {
+    const config = readConfig();
+
+    if (!(config.annualRate > -1)) {
+      showError('La tasa anual debe ser mayor que -100 %.');
+      clearOutputs();
+      return;
+    }
+    showError('');
+
+    const result = simulate(config);
+
+    if (!Number.isFinite(result.balance) || !Number.isFinite(result.totalContributed) || !Number.isFinite(result.monthlyRate)) {
+      showError('Los valores introducidos son demasiado grandes para calcularlos.');
+      clearOutputs();
+      return;
+    }
+
+    state.points = result.points;
+    state.years = result.years;
+    state.meta = {
+      months: config.months,
+      monthlyRate: result.monthlyRate,
+      totalContributed: result.totalContributed,
+      totalInterest: result.totalInterest,
+      principal: config.principal
+    };
+
+    ui.final.textContent = fmt(result.balance, 0);
+    ui.contributed.textContent = fmt(result.totalContributed, 0);
+    ui.interest.textContent = fmt(result.totalInterest, 0);
+
+    const growth = result.totalContributed > 0
+      ? (result.totalInterest / result.totalContributed) * 100
+      : 0;
+    ui.growth.textContent = growth.toFixed(1).replace('.', ',') + ' %';
+
+    if (config.months === 0) {
+      ui.note.textContent = 'Sin plazo: el saldo no genera rendimiento.';
+    } else {
+      ui.note.textContent = 'Tasa efectiva mensual ' + pct(result.monthlyRate * 100) +
+        ' · ' + config.months + (config.months === 1 ? ' mes' : ' meses');
+    }
+
+    renderTable(config.principal);
+    resizeCanvas();
+  }
+
+  function renderTable(principal) {
+    const fragment = document.createDocumentFragment();
+
+    const initialRow = document.createElement('tr');
+    initialRow.innerHTML =
+      '<td>Inicio</td>' +
+      '<td>' + fmt(principal, 0) + '</td>' +
+      '<td>' + fmt(0, 0) + '</td>' +
+      '<td>' + fmt(principal, 0) + '</td>';
+    fragment.appendChild(initialRow);
+
+    state.years.forEach(function (row) {
+      const tr = document.createElement('tr');
+      const label = 'Año ' + row.year + (row.partial ? ' (parcial)' : '');
+      tr.innerHTML =
+        '<td>' + label + '</td>' +
+        '<td>' + fmt(row.contribution, 0) + '</td>' +
+        '<td>' + fmt(row.interest, 0) + '</td>' +
+        '<td>' + fmt(row.balance, 0) + '</td>';
+      fragment.appendChild(tr);
+    });
+
+    ui.tableBody.replaceChildren(fragment);
+  }
+
+  /* ---------- Gráfico ---------- */
+
+  function niceScale(maxValue, tickCount) {
+    const ticks = tickCount || 4;
+    if (!(maxValue > 0)) return { max: 1, step: 0.25 };
+
+    const rawStep = maxValue / ticks;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const normalized = rawStep / magnitude;
+
+    let step;
+    if (normalized <= 1) step = 1;
+    else if (normalized <= 2) step = 2;
+    else if (normalized <= 2.5) step = 2.5;
+    else if (normalized <= 5) step = 5;
+    else step = 10;
+
+    step *= magnitude;
+    const max = Math.ceil(maxValue / step) * step;
+    return { max: max, step: step };
+  }
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.round(rect.width * dpr));
+    const height = Math.max(1, Math.round(rect.height * dpr));
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawChart(null);
+  }
+
+  function drawChart(hoverMonth) {
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    if (!width || !height) return;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const padL = 64;
+    const padR = 18;
+    const padT = 18;
+    const padB = 30;
+    const plotW = Math.max(1, width - padL - padR);
+    const plotH = Math.max(1, height - padT - padB);
+
+    const months = state.meta.months || 0;
+    const points = state.points;
+
+    let maxBalance = 1;
+    for (let i = 0; i < points.length; i++) {
+      if (points[i].balance > maxBalance) maxBalance = points[i].balance;
+    }
+    if (maxBalance < 1) maxBalance = 1;
+
+    const scale = niceScale(maxBalance, 4);
+    const yMax = scale.max;
+
+    const x = function (month) {
+      return padL + (months === 0 ? 0 : (month / months) * plotW);
+    };
+    const y = function (value) {
+      return padT + plotH - (value / yMax) * plotH;
+    };
+
+    state.chartGeom = {
+      padL: padL,
+      padT: padT,
+      plotW: plotW,
+      plotH: plotH,
+      months: months,
+      width: width,
+      height: height,
+      yMax: yMax
+    };
+
+    // Rejilla horizontal y etiquetas del eje Y
+    ctx.font = '11px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    const steps = Math.round(yMax / scale.step);
+    for (let i = 0; i <= steps; i++) {
+      const value = i * scale.step;
+      const py = y(value);
+
+      ctx.beginPath();
+      ctx.moveTo(padL, py);
+      ctx.lineTo(padL + plotW, py);
+      ctx.strokeStyle = i === 0 ? 'rgba(148, 163, 184, .28)' : 'rgba(148, 163, 184, .1)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#7c8da4';
+      ctx.fillText(fmtCompact(value), padL - 10, py);
+    }
+
+    // Etiquetas del eje X
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#7c8da4';
+
+    const totalYears = Math.max(1, Math.ceil(months / 12));
+    const yearStep = Math.max(1, Math.ceil(totalYears / 6));
+    for (let year = 0; year * 12 <= months; year += yearStep) {
+      ctx.fillText(year + 'a', x(year * 12), padT + plotH + 10);
+    }
+
+    if (points.length === 0) return;
+
+    // Área bajo la curva del saldo
+    ctx.beginPath();
+    ctx.moveTo(x(points[0].month), y(points[0].balance));
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(x(points[i].month), y(points[i].balance));
+    }
+    ctx.lineTo(x(months), padT + plotH);
+    ctx.lineTo(x(points[0].month), padT + plotH);
+    ctx.closePath();
+
+    const gradient = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+    gradient.addColorStop(0, 'rgba(52, 211, 153, .32)');
+    gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Línea de aportes
+    ctx.beginPath();
+    ctx.moveTo(x(points[0].month), y(points[0].contributed));
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(x(points[i].month), y(points[i].contributed));
+    }
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = 'rgba(148, 163, 184, .7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Línea del saldo
+    ctx.beginPath();
+    ctx.moveTo(x(points[0].month), y(points[0].balance));
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(x(points[i].month), y(points[i].balance));
+    }
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Punto final
+    const last = points[points.length - 1];
+    ctx.beginPath();
+    ctx.arc(x(last.month), y(last.balance), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#34d399';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(7, 11, 20, .9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Indicador al pasar el cursor
+    if (hoverMonth !== null && points[hoverMonth]) {
+      const point = points[hoverMonth];
+      const px = x(point.month);
+      const py = y(point.balance);
+
+      ctx.beginPath();
+      ctx.moveTo(px, padT);
+      ctx.lineTo(px, padT + plotH);
+      ctx.strokeStyle = 'rgba(226, 232, 240, .18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.fill();
+      ctx.strokeStyle = '#070b14';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  function monthLabel(month) {
+    if (month === 0) return 'Inicio';
+    return 'Mes ' + month + ' · Año ' + Math.ceil(month / 12);
+  }
+
+  function onPointerMove(event) {
+    const geom = state.chartGeom;
+    if (!geom || state.points.length === 0) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const px = event.clientX - rect.left;
+
+    let ratio = geom.months === 0 ? 0 : (px - geom.padL) / geom.plotW;
+    ratio = Math.max(0, Math.min(1, ratio));
+
+    const month = Math.round(ratio * geom.months);
+    const point = state.points[month];
+    if (!point) return;
+
+    drawChart(month);
+
+    const x = geom.padL + (geom.months === 0 ? 0 : (month / geom.months) * geom.plotW);
+    const y = geom.padT + geom.plotH - (point.balance / geom.yMax) * geom.plotH;
+
+    ui.tooltip.hidden = false;
+    ui.tooltip.style.left = Math.min(Math.max(x, 84), geom.width - 84) + 'px';
+    ui.tooltip.style.top = Math.max(y, 60) + 'px';
+    ui.tooltip.innerHTML =
+      '<strong>' + monthLabel(month) + '</strong>' +
+      '<span>Saldo: <b>' + fmt(point.balance, 0) + '</b></span>' +
+      '<span>Aportado: ' + fmt(point.contributed, 0) + '</span>';
+  }
+
+  function onPointerLeave() {
+    ui.tooltip.hidden = true;
+    drawChart(null);
+  }
+
+  /* ---------- CSV ---------- */
+
+  function downloadCSV() {
+    const config = readConfig();
+    if (!(config.annualRate > -1)) return;
+
+    const lines = [];
+    lines.push('Año;Aportes del año;Interés del año;Saldo final');
+    lines.push('Inicio;' + config.principal.toFixed(2) + ';0.00;' + config.principal.toFixed(2));
+
+    state.years.forEach(function (row) {
+      lines.push([
+        'Año ' + row.year + (row.partial ? ' (parcial)' : ''),
+        row.contribution.toFixed(2),
+        row.interest.toFixed(2),
+        row.balance.toFixed(2)
+      ].join(';'));
+    });
+
+    const csv = '\uFEFF' + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'interes-compuesto.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ---------- Eventos ---------- */
+
+  function updateCurrencySymbols() {
+    const symbol = currencySymbol();
+    document.querySelectorAll('.money-prefix').forEach(function (el) {
+      el.textContent = symbol;
+    });
+  }
+
+  function syncYearsFromNumber() {
+    let years = readNumber(ui.years);
+    if (!Number.isFinite(years)) years = 0;
+    years = Math.max(0, Math.min(50, years));
+    ui.yearsRange.value = String(years);
+  }
+
+  function reset() {
+    ui.principal.value = DEFAULTS.principal;
+    ui.monthly.value = DEFAULTS.monthly;
+    ui.rate.value = DEFAULTS.rate;
+    ui.freq.value = DEFAULTS.freq;
+    ui.years.value = DEFAULTS.years;
+    ui.yearsRange.value = DEFAULTS.years;
+    ui.currency.value = DEFAULTS.currency;
+    ui.timing.value = DEFAULTS.timing;
+    updateCurrencySymbols();
+    render();
+  }
+
+  [ui.principal, ui.monthly, ui.rate, ui.freq, ui.timing].forEach(function (el) {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+
+  ui.years.addEventListener('input', function () {
+    syncYearsFromNumber();
+    render();
+  });
+
+  ui.yearsRange.addEventListener('input', function () {
+    ui.years.value = ui.yearsRange.value;
+    render();
+  });
+
+  ui.currency.addEventListener('change', function () {
+    updateCurrencySymbols();
+    render();
+  });
+
+  ui.download.addEventListener('click', downloadCSV);
+  ui.reset.addEventListener('click', reset);
+
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerleave', onPointerLeave);
+
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(function () { resizeCanvas(); });
+    observer.observe(canvas.parentElement);
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+
+  /* ---------- Inicio ---------- */
+
+  updateCurrencySymbols();
+  render();
+})();
+</script>
+</body>
+</html>
